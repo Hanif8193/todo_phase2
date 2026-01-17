@@ -1,0 +1,472 @@
+openapi: 3.0.3
+info:
+  title: Todo App - Tasks API
+  description: |
+    Task management endpoints for creating, reading, updating, and deleting tasks.
+    All endpoints require JWT authentication and enforce user-scoped data access.
+  version: 1.0.0
+  contact:
+    name: Todo App Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.todo-app.example.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/{user_id}/tasks:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+
+    get:
+      summary: Get all tasks for authenticated user
+      description: |
+        Returns all tasks owned by the authenticated user, sorted by creation date (newest first).
+        The JWT user_id claim MUST match the {user_id} path parameter.
+      operationId: getTasks
+      tags:
+        - Tasks
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskResponse'
+              examples:
+                multipleTasks:
+                  summary: User with multiple tasks
+                  value:
+                    - id: 456
+                      user_id: 123
+                      title: Complete project documentation
+                      description: Write comprehensive docs for Phase II
+                      is_completed: false
+                      created_at: 2026-01-17T10:30:00Z
+                      updated_at: 2026-01-17T10:30:00Z
+                    - id: 455
+                      user_id: 123
+                      title: Review pull requests
+                      description: null
+                      is_completed: true
+                      created_at: 2026-01-16T14:20:00Z
+                      updated_at: 2026-01-17T09:15:00Z
+                emptyList:
+                  summary: User with no tasks
+                  value: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      summary: Create new task for authenticated user
+      description: |
+        Creates a new task owned by the authenticated user.
+        The user_id is extracted from the JWT token, not the URL parameter.
+      operationId: createTask
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+            examples:
+              withDescription:
+                summary: Task with description
+                value:
+                  title: Complete project documentation
+                  description: Write comprehensive docs for Phase II
+              withoutDescription:
+                summary: Task without description
+                value:
+                  title: Review pull requests
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+              examples:
+                newTask:
+                  summary: Newly created task
+                  value:
+                    id: 456
+                    user_id: 123
+                    title: Complete project documentation
+                    description: Write comprehensive docs for Phase II
+                    is_completed: false
+                    created_at: 2026-01-17T10:30:00Z
+                    updated_at: 2026-01-17T10:30:00Z
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/{user_id}/tasks/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/TaskIdPath'
+
+    get:
+      summary: Get single task by ID
+      description: |
+        Returns task details if the task exists and belongs to the authenticated user.
+      operationId: getTask
+      tags:
+        - Tasks
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+              examples:
+                taskFound:
+                  summary: Task details
+                  value:
+                    id: 456
+                    user_id: 123
+                    title: Complete project documentation
+                    description: Write comprehensive docs for Phase II
+                    is_completed: false
+                    created_at: 2026-01-17T10:30:00Z
+                    updated_at: 2026-01-17T10:30:00Z
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update task
+      description: |
+        Updates task title and description if the task belongs to the authenticated user.
+      operationId: updateTask
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+            examples:
+              updateBoth:
+                summary: Update title and description
+                value:
+                  title: Updated project documentation
+                  description: Updated description with more details
+              updateTitleOnly:
+                summary: Update title only
+                value:
+                  title: Updated project documentation
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+              examples:
+                updatedTask:
+                  summary: Task after update
+                  value:
+                    id: 456
+                    user_id: 123
+                    title: Updated project documentation
+                    description: Updated description with more details
+                    is_completed: false
+                    created_at: 2026-01-17T10:30:00Z
+                    updated_at: 2026-01-17T11:45:00Z
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete task
+      description: |
+        Permanently deletes the task if it belongs to the authenticated user.
+      operationId: deleteTask
+      tags:
+        - Tasks
+      responses:
+        '204':
+          description: Task deleted successfully (no content returned)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/{user_id}/tasks/{id}/complete:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/TaskIdPath'
+
+    patch:
+      summary: Toggle task completion status
+      description: |
+        Marks a task as complete or incomplete. Updates the updated_at timestamp.
+      operationId: toggleTaskCompletion
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteTaskRequest'
+            examples:
+              markComplete:
+                summary: Mark task as complete
+                value:
+                  is_completed: true
+              markIncomplete:
+                summary: Mark task as incomplete
+                value:
+                  is_completed: false
+      responses:
+        '200':
+          description: Task completion status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+              examples:
+                completedTask:
+                  summary: Task marked as complete
+                  value:
+                    id: 456
+                    user_id: 123
+                    title: Complete project documentation
+                    description: Write comprehensive docs for Phase II
+                    is_completed: true
+                    created_at: 2026-01-17T10:30:00Z
+                    updated_at: 2026-01-17T12:00:00Z
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Task title (required, cannot be empty)
+          example: Complete project documentation
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+          description: Optional task description
+          example: Write comprehensive docs for Phase II
+
+    UpdateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Updated task title
+          example: Updated project documentation
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+          description: Updated task description (null to clear)
+          example: Updated description with more details
+
+    CompleteTaskRequest:
+      type: object
+      required:
+        - is_completed
+      properties:
+        is_completed:
+          type: boolean
+          description: Completion status (true = complete, false = incomplete)
+          example: true
+
+    TaskResponse:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - description
+        - is_completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Unique task identifier
+          example: 456
+        user_id:
+          type: integer
+          description: Owner user ID
+          example: 123
+        title:
+          type: string
+          description: Task title
+          example: Complete project documentation
+        description:
+          type: string
+          nullable: true
+          description: Task description (null if not provided)
+          example: Write comprehensive docs for Phase II
+        is_completed:
+          type: boolean
+          description: Completion status
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: Task creation timestamp (ISO 8601, UTC)
+          example: 2026-01-17T10:30:00Z
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp (ISO 8601, UTC)
+          example: 2026-01-17T10:30:00Z
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message describing what went wrong
+          example: Task not found
+
+  parameters:
+    UserIdPath:
+      name: user_id
+      in: path
+      required: true
+      description: |
+        User ID from URL path. MUST match the user_id claim in the JWT token.
+        Backend validates user ownership using JWT claim, not this parameter.
+      schema:
+        type: integer
+        example: 123
+
+    TaskIdPath:
+      name: id
+      in: path
+      required: true
+      description: Unique task identifier
+      schema:
+        type: integer
+        example: 456
+
+  responses:
+    BadRequest:
+      description: Invalid request (e.g., empty title, invalid data)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            emptyTitle:
+              summary: Empty task title
+              value:
+                detail: Task title cannot be empty
+            titleTooLong:
+              summary: Title exceeds max length
+              value:
+                detail: Task title exceeds 200 characters
+
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              summary: No authentication token provided
+              value:
+                detail: Not authenticated
+            invalidToken:
+              summary: Invalid or expired token
+              value:
+                detail: Token validation failed
+
+    Forbidden:
+      description: User attempting to access another user's resources
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorizedAccess:
+              summary: Attempted cross-user access
+              value:
+                detail: Cannot access other user's tasks
+
+    NotFound:
+      description: Task not found or user doesn't own it
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            taskNotFound:
+              summary: Task doesn't exist
+              value:
+                detail: Task not found
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from /auth/signup or /auth/signin.
+        Include in Authorization header as: Bearer <token>
+
+        Token claims structure:
+        {
+          "user_id": 123,
+          "email": "user@example.com",
+          "exp": 1706097600
+        }
+
+tags:
+  - name: Tasks
+    description: Task management operations (CRUD + completion toggle)
