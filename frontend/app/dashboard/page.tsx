@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showTaskList, setShowTaskList] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Redirect to signin if not authenticated
@@ -133,16 +134,24 @@ export default function DashboardPage() {
 
         {/* Task List Section */}
         <div className="bg-white rounded-lg shadow-md">
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-900">
               Your Tasks
             </h2>
+            <button
+              onClick={() => setShowTaskList(!showTaskList)}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors duration-200"
+            >
+              {showTaskList ? "Hide Tasks" : "View Tasks"}
+            </button>
           </div>
-          <TaskList
-            userId={user.id}
-            onTaskUpdated={handleTaskUpdated}
-            refreshTrigger={refreshTrigger}
-          />
+          {showTaskList && (
+            <TaskList
+              userId={user.id}
+              onTaskUpdated={handleTaskUpdated}
+              refreshTrigger={refreshTrigger}
+            />
+          )}
         </div>
       </main>
     </div>

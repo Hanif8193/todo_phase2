@@ -11,13 +11,10 @@ This module handles:
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 from config import settings
-
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # HTTP Bearer token scheme for FastAPI
 security = HTTPBearer()
@@ -32,8 +29,17 @@ def hash_password(password: str) -> str:
 
     Returns:
         str: Hashed password
+
+    Note:
+        Bcrypt has a 72-byte limit. Password is truncated to 72 bytes before hashing.
     """
-    return pwd_context.hash(password)
+    # Truncate to 72 bytes to comply with bcrypt limitation
+    password_bytes = password.encode('utf-8')[:72]
+    # Generate salt and hash the password
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    # Return as string (decoded)
+    return hashed.decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -46,8 +52,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
     Returns:
         bool: True if password matches, False otherwise
+
+    Note:
+        Bcrypt has a 72-byte limit. Password is truncated to 72 bytes before verification.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    # Truncate to 72 bytes to comply with bcrypt limitation
+    password_bytes = plain_password.encode('utf-8')[:72]
+    hashed_bytes = hashed_password.encode('utf-8')
+    # Check password
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 def create_access_token(user_id: int, email: str) -> str:

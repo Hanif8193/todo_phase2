@@ -87,3 +87,6 @@ Desktop.ini
 *.key
 *.crt
 credentials.json
+
+# Temporary files
+nul

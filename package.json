@@ -1,0 +1,12 @@
+{
+  "name": "todo-phase2",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint"
+  },
+  "description": "Todo application with Next.js frontend and FastAPI backend"
+}
