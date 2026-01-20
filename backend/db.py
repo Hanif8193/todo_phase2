@@ -37,12 +37,16 @@ else:
     ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./todo_app.db"
 
 # Create async engine for database operations
+# For serverless (Vercel), use smaller pool to avoid connection limits
+# NeonDB pooler supports up to 10000 connections, but each function instance should use fewer
 engine = create_async_engine(
     ASYNC_DATABASE_URL,
-    echo=True,  # Log SQL queries (set to False in production)
+    echo=False,  # Disable SQL logging in production for performance
     future=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=5,  # Smaller pool for serverless
+    max_overflow=10,  # Limited overflow for serverless
+    pool_pre_ping=True,  # Verify connections before using them
+    pool_recycle=3600,  # Recycle connections after 1 hour
 )
 
 # Create async session factory

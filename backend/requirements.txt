@@ -23,3 +23,6 @@ fastapi-cors==0.0.6
 # Pydantic
 pydantic==2.5.3
 pydantic-settings==2.1.0
+
+# Vercel Adapter
+mangum==0.17.0
