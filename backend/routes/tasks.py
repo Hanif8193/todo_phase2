@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from db import get_session
 from models import Task, TaskCreate, TaskUpdate, TaskResponse, TaskCompletionToggle
 from auth import get_current_user, validate_user_access
@@ -270,7 +270,7 @@ async def update_task(
         task.description = task_update.description
 
     # Update the updated_at timestamp
-    task.updated_at = datetime.utcnow()
+    task.updated_at = datetime.now(timezone.utc)
 
     await session.flush()
     await session.refresh(task)
@@ -402,7 +402,7 @@ async def toggle_task_completion(
     task.is_completed = completion_data.is_completed
 
     # Update the updated_at timestamp
-    task.updated_at = datetime.utcnow()
+    task.updated_at = datetime.now(timezone.utc)
 
     await session.flush()
     await session.refresh(task)

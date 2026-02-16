@@ -8,9 +8,10 @@ This module defines:
 """
 
 from sqlmodel import SQLModel, Field, Relationship, Column, Index
+from pydantic import ConfigDict
 from sqlalchemy import String, Text, Boolean, TIMESTAMP
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class User(SQLModel, table=True):
@@ -35,20 +36,17 @@ class User(SQLModel, table=True):
     )
     password_hash: str = Field(sa_column=Column(String(255), nullable=False))
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP, nullable=False),
     )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Relationship to tasks (one user has many tasks)
     tasks: List["Task"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
-
-    class Config:
-        """Pydantic configuration for the User model."""
-
-        arbitrary_types_allowed = True
 
 
 class Task(SQLModel, table=True):
@@ -85,21 +83,18 @@ class Task(SQLModel, table=True):
     )
     is_completed: bool = Field(default=False, sa_column=Column(Boolean, nullable=False))
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP, nullable=False),
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP, nullable=False),
     )
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     # Relationship to user (many tasks belong to one user)
     user: Optional[User] = Relationship(back_populates="tasks")
-
-    class Config:
-        """Pydantic configuration for the Task model."""
-
-        arbitrary_types_allowed = True
 
 
 # Pydantic models for API request/response (without database-specific fields)
